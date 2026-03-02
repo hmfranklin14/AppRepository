@@ -52,7 +52,7 @@ def display_altair_png(chart, scale=2):
 
 ```{python}
 #loading and adjusting data
-base_path = os.path.dirname(os.path.abspath(__file__))
+base_path = os.getcwd()
 crime = pd.read_csv(os.path.join(base_path, "data/derived-data/crime_svi_merge_no_na.csv"))
 tracts = gpd.read_file(os.path.join(base_path, "data/raw-data/Census_Tracts_20260228/geo_export_89c4b171-2783-4715-9b7d-e49f753f00f0.shp"))
 crimes_with_tracts = gpd.read_file(os.path.join(base_path, "data/derived-data/crimes_with_tracts.csv"))
@@ -68,7 +68,6 @@ crime["SVI_quintile"] = pd.cut(
     bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
     labels=["1", "2", "3", "4", "5"],
     include_lowest=True)
-crime.head()
 
 #tract full 
 tract_full["SVI_quintile"] = pd.cut(
