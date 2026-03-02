@@ -43,6 +43,7 @@ geometry = [Point(xy) for xy in zip(Crime["Longitude"], Crime["Latitude"])]
 crimes_gdf = gpd.GeoDataFrame(Crime, geometry=geometry, crs="EPSG:4326")
 tracts = tracts.to_crs(crimes_gdf.crs)
 crimes_with_tracts = gpd.sjoin(crimes_gdf, tracts, how="left", predicate="within")
+crimes_with_tracts.to_csv(os.path.join(base_path, "data/derived-data/crimes_with_tracts.csv"), index=False)
 
 #convert FIPS to census tract 
 svi_cook["tract_short"] = svi_cook["FIPS"].astype(str).str[5:]
@@ -58,3 +59,30 @@ crime_merge_no_na = crime_merge.dropna(subset=["Location", "SVI"])
 crime_merge_no_na.to_csv(os.path.join(base_path, "data/derived-data/crime_svi_merge_no_na.csv"), index=False)
 ```
 
+
+```{python}
+#Creating functional complete tract-level dataset revision
+tracts_key = tracts.copy()
+tracts_key["FIPS"] = (tracts_key["census_t_1"].astype(str).str.replace(r"\.0$", "", regex=True).str.zfill(11))
+crime_key = crime_merge_no_na.copy()
+crime_key["FIPS"] = (crime_key["FIPS"].astype(str).str.replace(r"\.0$", "", regex=True).str.zfill(11))
+tract_gb = (
+    crime_key.groupby("FIPS", as_index=False)
+             .agg(pop=("E_TOTPOP", "first"), svi=("SVI", "first")))
+tract_counts = (crime_key.groupby("FIPS", as_index=False)
+    .agg(incidents=("ID", "count")))
+
+#full tract list
+tract_full = (
+    tracts_key[["FIPS", "geometry"]]
+    .merge(tract_gb, on="FIPS", how="left")
+    .merge(tract_counts, on="FIPS", how="left"))
+tract_full["incidents"] = tract_full["incidents"].fillna(0)
+tract_full["pop"] = pd.to_numeric(tract_full["pop"], errors="coerce")
+tract_full["crime_per_1000"] = np.where(
+    (tract_full["pop"].notna()) & (tract_full["pop"] > 0),
+    (tract_full["incidents"] / tract_full["pop"]) * 1000,
+    np.nan)
+tract_full.head()
+tract_full.to_file(os.path.join(base_path, "data/derived-data/tract_full.geojson"), driver="GeoJSON")
+```
