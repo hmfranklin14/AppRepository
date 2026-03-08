@@ -5,6 +5,7 @@ import pandas as pd
 import altair as alt
 import geopandas as gpd
 from shapely.geometry import Point
+import os
 
 Crime = pd.read_csv('data/raw-data/InitialCrimes.csv')
 
@@ -532,7 +533,7 @@ Crime_2023 = Crime_2023.drop(columns=["TotalCrimes"])
 
 Save the Crime dataset in derived-data.
 ```{python}
-Crime.to_csv(os.path.join("data/", "derived-data/Crime.csv"), index=False)
+Crime.to_csv("data/derived-data/Crime.csv", index=False)
 ```
 
 Aggregate the data and group by zip code. Then calculate Pearson correlation coefficients between the crime rate and the other variables.
